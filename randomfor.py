@@ -9,12 +9,12 @@ from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 
 
-# ========== CONFIG ==========
+
 RAW_DATA_DIR = "data/raw_stations/"
 LOCATION_FILE = "data/PCP_location.txt"
 TARGET_STATION = "8625_2250"
 NUM_NEIGHBORS = 5
-# ============================
+
 
 def read_station_file(filepath):
     with open(filepath, 'r') as f:
@@ -52,10 +52,10 @@ def load_station_locations(filepath):
     df = pd.read_csv(filepath)
     df["NAME"] = df["NAME"].astype(str)
 
-    # The file is actually LONG, LAT — so swap column names
+    
     df.rename(columns={"LAT": "LONG", "LONG": "LAT"}, inplace=True)
 
-    return df.set_index("NAME")[["LAT", "LONG"]]  # LAT and LONG are now correctly labeled
+    return df.set_index("NAME")[["LAT", "LONG"]]  
 
 
 
@@ -78,7 +78,7 @@ def get_nearest_stations(target_id, location_df, rainfall_df, k=5):
     
     target_coord = (target_lat, target_long)
 
-    # Filter out invalid coordinates
+    
     valid_stations = []
     for name, row in location_df.iterrows():
         lat, lon = row["LAT"], row["LONG"]
@@ -89,15 +89,15 @@ def get_nearest_stations(target_id, location_df, rainfall_df, k=5):
     
     location_df = location_df.loc[valid_stations]
     
-    # Compute distances
+    
     distances = location_df.apply(
         lambda row: geodesic(target_coord, (row["LAT"], row["LONG"])).km, axis=1
     )
 
-    nearest = distances.nsmallest(k + 1)  # including target
+    nearest = distances.nsmallest(k + 1)  
     all_neighbors = [station for station in nearest.index if station != target_id]
 
-    # Filter by stations that exist in rainfall_df
+    
     valid_neighbors = [station for station in all_neighbors if station in rainfall_df.columns]
     excluded = [s for s in all_neighbors if s not in rainfall_df.columns]
 
@@ -113,40 +113,40 @@ def get_nearest_stations(target_id, location_df, rainfall_df, k=5):
 
 
 def prepare_dataset(df, target_station, neighbors):
-    # Debugging step: Print available columns in the DataFrame
+   
     print("Available columns in DataFrame:", df.columns)
 
-    # Ensure neighbors exist in the DataFrame
+   
     valid_neighbors = [neighbor for neighbor in neighbors if neighbor in df.columns]
     
-    # Debugging step: Print valid neighbors (columns that exist in the DataFrame)
+    
     print("Valid neighbors:", valid_neighbors)
 
-    # If no valid neighbors are found, we can't proceed with training, so raise an exception
+    
     if not valid_neighbors:
         raise ValueError(f"No valid neighbors found in the DataFrame. Available columns: {df.columns}")
     
-    # Ensure that target station is also in the DataFrame
+   
     if target_station not in df.columns:
         raise ValueError(f"Target station '{target_station}' is not found in the DataFrame.")
     
-    # Combine target station and valid neighbors for dropna operation
+   
     valid_columns = [target_station] + valid_neighbors
     
-    # Debugging step: Print which columns will be used for dropna
+    
     print("Columns used for dropna:", valid_columns)
     
-    # Drop rows with missing values in the valid columns (target station + valid neighbors)
-    df = df.dropna(subset=valid_columns)  # Drop dates with missing values
     
-    # Debugging step: Print number of rows remaining after dropping rows with missing data
+    df = df.dropna(subset=valid_columns) 
+    
+   
     print(f"Rows remaining after dropping missing values: {len(df)}")
 
-    # Prepare X (features) and y (target)
+   
     X = df[valid_neighbors]
     y = df[target_station]
 
-    # Debugging step: Print the first few rows of X and y to verify the dataset
+    
     print("First few rows of the dataset (X and y):")
     print(X.head())
     print(y.head())
@@ -192,7 +192,7 @@ def main():
     print("📈 Training model...")
     model = train_and_evaluate(X, y)
 
-    # Example prediction
+   
     example_input = X.iloc[0]
     predicted = model.predict([example_input])[0]
     print(f"\nExample prediction:")
